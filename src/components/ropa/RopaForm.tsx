@@ -87,7 +87,9 @@ export default function RopaForm({ initialData, onSubmit, onCancel, submitLabel 
     try {
       await onSubmit(formData)
     } catch (err) {
-      setError('Please check your input and try again')
+      const errorMessage = err instanceof Error ? err.message : 'Please check your input and try again'
+      setError(errorMessage)
+    } finally {
       setLoading(false)
     }
   }
@@ -163,7 +165,7 @@ export default function RopaForm({ initialData, onSubmit, onCancel, submitLabel 
                 onClick={() => removeCategory(index)}
                 className="hover:text-blue-900"
               >
-                ×
+                x
               </button>
             </span>
           ))}
@@ -203,7 +205,7 @@ export default function RopaForm({ initialData, onSubmit, onCancel, submitLabel 
                 onClick={() => removeSubject(index)}
                 className="hover:text-emerald-900"
               >
-                ×
+                x
               </button>
             </span>
           ))}
@@ -243,7 +245,7 @@ export default function RopaForm({ initialData, onSubmit, onCancel, submitLabel 
                 onClick={() => removeThirdParty(index)}
                 className="hover:text-purple-900"
               >
-                ×
+                x
               </button>
             </span>
           ))}
