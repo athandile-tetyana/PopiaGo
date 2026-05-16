@@ -2,6 +2,12 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import PaiaManualGenerator from '@/components/paia/PaiaManualGenerator'
 
+interface Organization {
+  id: string
+  name: string
+  public_slug: string
+}
+
 export default async function PaiaPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -30,6 +36,25 @@ export default async function PaiaPage() {
     )
   }
 
+  const org = (
+    Array.isArray(orgMember.organizations)
+      ? orgMember.organizations[0]
+      : orgMember.organizations
+  ) as Organization | null
+
+  if (!org) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="bg-white rounded-lg shadow p-8">
+            <h1 className="text-2xl font-bold text-slate-900 mb-4">No Organization Found</h1>
+            <p className="text-slate-600">You are not a member of any organization.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -38,7 +63,7 @@ export default async function PaiaPage() {
           <p className="text-slate-600 mt-1">Generate your Promotion of Access to Information Act manual</p>
         </div>
 
-        <PaiaManualGenerator org={orgMember.organizations} />
+        <PaiaManualGenerator org={org} />
       </div>
     </div>
   )

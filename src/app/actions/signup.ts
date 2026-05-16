@@ -1,5 +1,6 @@
 'use server'
 
+import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
@@ -17,6 +18,8 @@ export async function signup(formData: {
   const supabase = await createClient()
 
   try {
+    const serviceSupabase = createServiceClient()
+
     // Step 1: Sign up the user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: formData.email,
@@ -38,12 +41,10 @@ export async function signup(formData: {
     }
 
     // Step 2: Generate public_slug from organization name (simple lowercase)
-    const publicSlug = formData.organizationName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-
-    // Step 3: Create organization using service role (bypass RLS for initial org creation)
-    // We need to use service role key here since the user won't have RLS permissions immediately
-    const { createServiceClient } = await import('@/lib/supabase/service')
-    const serviceSupabase = await createServiceClient()
+    const publicSlug = formData.organizationName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
 
     const { data: orgData, error: orgError } = await serviceSupabase
       .from('organizations')
@@ -56,10 +57,13 @@ export async function signup(formData: {
 
     if (orgError) {
       console.error('Organization creation error:', orgError)
+      await serviceSupabase.auth.admin.deleteUser(authData.user.id)
       return { success: false, error: `Failed to create organization: ${orgError.message}` }
     }
 
     if (!orgData) {
+      await serviceSupabase.from('organizations').delete().eq('public_slug', publicSlug)
+      await serviceSupabase.auth.admin.deleteUser(authData.user.id)
       return { success: false, error: 'Failed to retrieve created organization' }
     }
 
@@ -74,6 +78,8 @@ export async function signup(formData: {
 
     if (memberError) {
       console.error('Org member creation error:', memberError)
+      await serviceSupabase.from('organizations').delete().eq('id', orgData.id)
+      await serviceSupabase.auth.admin.deleteUser(authData.user.id)
       return { success: false, error: `Failed to add user to organization: ${memberError.message}` }
     }
 

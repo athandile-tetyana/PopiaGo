@@ -2,6 +2,12 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 
+interface Organization {
+  id: string
+  name: string
+  public_slug: string
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -30,7 +36,24 @@ export default async function DashboardPage() {
     )
   }
 
-  const org = orgMember.organizations
+  const org = (
+    Array.isArray(orgMember.organizations)
+      ? orgMember.organizations[0]
+      : orgMember.organizations
+  ) as Organization | null
+
+  if (!org) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="bg-white rounded-lg shadow p-8">
+            <h1 className="text-2xl font-bold text-slate-900 mb-4">No Organization Found</h1>
+            <p className="text-slate-600">You are not a member of any organization.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Get compliance metrics
   const { count: ropaCount } = await supabase
