@@ -122,7 +122,7 @@ ${formData.contactDetails ? `## 10. Contact Details\n\n${formData.contactDetails
       paiaManualSchema.parse(formData)
       setGeneratedMarkdown(generateMarkdown())
       setError(null)
-    } catch (err) {
+    } catch {
       setError('Please check your input and ensure all required fields are filled')
     }
   }
@@ -165,7 +165,7 @@ ${formData.contactDetails ? `## 10. Contact Details\n\n${formData.contactDetails
 
       router.push('/dashboard')
       router.refresh()
-    } catch (err) {
+    } catch {
       setError('Please check your input and try again')
       setLoading(false)
     }

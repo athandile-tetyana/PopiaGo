@@ -60,7 +60,7 @@ export default function SignupPage() {
           {requiresEmailConfirmation && (
             <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded mb-4">
               <p className="font-semibold mb-1">Check your email to confirm your account</p>
-              <p className="text-sm">We've sent a confirmation link to {email}. Please click the link to verify your account, then sign in to continue.</p>
+              <p className="text-sm">We&apos;ve sent a confirmation link to {email}. Please click the link to verify your account, then sign in to continue.</p>
               <div className="mt-3">
                 <Link href="/login" className="text-emerald-700 hover:text-emerald-800 font-medium text-sm">
                   Go to sign in →

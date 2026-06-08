@@ -3,7 +3,7 @@ interface AuditLog {
   action: string
   entity_type: string
   entity_id?: string
-  details?: any
+  details?: unknown
   created_at: string
 }
 
@@ -78,6 +78,15 @@ export default function AuditLogTimeline({ logs }: AuditLogTimelineProps) {
     }
   }
 
+  const formatDetails = (details: unknown) => {
+    if (typeof details === 'string') {
+      return details
+    }
+
+    const formatted = JSON.stringify(details)
+    return formatted || 'Activity details unavailable'
+  }
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-lg font-semibold text-slate-900 mb-4">Recent Activity</h2>
@@ -99,9 +108,9 @@ export default function AuditLogTimeline({ logs }: AuditLogTimelineProps) {
                   {new Date(log.created_at).toLocaleString()}
                 </p>
               </div>
-              {log.details && (
+              {log.details !== undefined && log.details !== null && (
                 <p className="text-sm text-slate-600 mt-1">
-                  {typeof log.details === 'string' ? log.details : JSON.stringify(log.details)}
+                  {formatDetails(log.details)}
                 </p>
               )}
             </div>

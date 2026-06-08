@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
 
 export default async function DsarPage() {
   const supabase = await createClient()
@@ -40,7 +41,7 @@ export default async function DsarPage() {
     switch (status) {
       case 'pending':
         return 'bg-amber-100 text-amber-800'
-      case 'in_progress':
+      case 'in_review':
         return 'bg-blue-100 text-blue-800'
       case 'completed':
         return 'bg-emerald-100 text-emerald-800'
@@ -54,9 +55,11 @@ export default async function DsarPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">DSAR Requests</h1>
-          <p className="text-slate-600 mt-1">Manage Data Subject Access Requests</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">DSAR Requests</h1>
+            <p className="text-slate-600 mt-1">Manage Data Subject Access Requests</p>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -78,6 +81,9 @@ export default async function DsarPage() {
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Date
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -103,6 +109,14 @@ export default async function DsarPage() {
                       <div className="text-sm text-slate-600">
                         {new Date(request.created_at).toLocaleDateString()}
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <Link
+                        href={`/dashboard/dsar/${request.id}`}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        View & Update
+                      </Link>
                     </td>
                   </tr>
                 ))}

@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import { dsarSubmitSchema, type DsarSubmitInput } from '@/lib/validators/dsar'
 
+const dsarRequestTypes = ['access', 'deletion', 'correction', 'objection'] as const
+
 interface DsarIntakeFormProps {
-  onSubmit: (data: DsarSubmitInput) => Promise<void>
+  publicSlug: string
   orgName?: string
 }
 
-export default function DsarIntakeForm({ onSubmit, orgName }: DsarIntakeFormProps) {
+export default function DsarIntakeForm({ publicSlug, orgName }: DsarIntakeFormProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -27,7 +29,24 @@ export default function DsarIntakeForm({ onSubmit, orgName }: DsarIntakeFormProp
     setSuccess(false)
 
     try {
-      await onSubmit(formData)
+      const validatedData = dsarSubmitSchema.parse(formData)
+      const response = await fetch('/api/dsar/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...validatedData,
+          publicSlug,
+        }),
+      })
+
+      const result = (await response.json()) as { error?: string }
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to submit request. Please try again.')
+      }
+
       setSuccess(true)
       setFormData({
         requesterName: '',
@@ -35,8 +54,8 @@ export default function DsarIntakeForm({ onSubmit, orgName }: DsarIntakeFormProp
         requestType: 'access',
         description: '',
       })
-    } catch (err) {
-      setError('Failed to submit request. Please try again.')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to submit request. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -117,7 +136,15 @@ export default function DsarIntakeForm({ onSubmit, orgName }: DsarIntakeFormProp
           <select
             id="type"
             value={formData.requestType}
-            onChange={(e) => setFormData({ ...formData, requestType: e.target.value as any })}
+            onChange={(e) => {
+              const requestType = e.target.value
+              if (dsarRequestTypes.includes(requestType as DsarSubmitInput['requestType'])) {
+                setFormData({
+                  ...formData,
+                  requestType: requestType as DsarSubmitInput['requestType'],
+                })
+              }
+            }}
             required
             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >

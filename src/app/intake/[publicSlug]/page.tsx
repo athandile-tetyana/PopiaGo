@@ -1,18 +1,17 @@
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import DsarIntakeForm from '@/components/dsar/DsarIntakeForm'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     publicSlug: string
-  }
+  }>
 }
 
 export default async function PublicIntakePage({ params }: PageProps) {
-  const supabase = await createClient()
-  const { publicSlug } = params
+  const { publicSlug } = await params
+  const supabase = createServiceClient()
 
-  // Look up organization by public slug (publicly accessible)
   const { data: org } = await supabase
     .from('organizations')
     .select('name, public_slug')
@@ -21,25 +20,6 @@ export default async function PublicIntakePage({ params }: PageProps) {
 
   if (!org) {
     notFound()
-  }
-
-  const handleSubmit = async (data: any) => {
-    'use server'
-    
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/dsar/submit`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        ...data,
-        publicSlug,
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to submit request')
-    }
   }
 
   return (
@@ -52,7 +32,7 @@ export default async function PublicIntakePage({ params }: PageProps) {
           </p>
         </div>
 
-        <DsarIntakeForm onSubmit={handleSubmit} orgName={org.name} />
+        <DsarIntakeForm publicSlug={org.public_slug} orgName={org.name} />
 
         <div className="mt-8 text-center text-sm text-slate-500">
           <p>
