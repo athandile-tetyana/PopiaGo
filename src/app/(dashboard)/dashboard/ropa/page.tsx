@@ -31,7 +31,7 @@ export default async function RopaPage({ searchParams }: RopaPageProps) {
     .from('org_members')
     .select('org_id')
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   if (!orgMember) {
     return (

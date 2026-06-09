@@ -173,9 +173,10 @@ CREATE POLICY "Users can view DSAR requests in their org"
   ON dsar_requests FOR SELECT
   USING (org_id IN (SELECT org_id FROM org_members WHERE user_id = auth.uid()));
 
-CREATE POLICY "Users can insert DSAR requests in their org"
+CREATE POLICY "Allow public and authenticated to insert DSAR requests"
   ON dsar_requests FOR INSERT
-  WITH CHECK (org_id IN (SELECT org_id FROM org_members WHERE user_id = auth.uid()));
+  TO anon, authenticated
+  WITH CHECK (true);
 
 CREATE POLICY "Users can update DSAR requests in their org"
   ON dsar_requests FOR UPDATE
@@ -215,4 +216,6 @@ CREATE POLICY "Users can insert audit logs in their org"
 CREATE OR REPLACE FUNCTION get_org_by_slug(slug TEXT)
 RETURNS UUID AS $$
   SELECT id FROM organizations WHERE public_slug = slug LIMIT 1;
+$$ LANGUAGE SQL SECURITY DEFINER;
+ slug LIMIT 1;
 $$ LANGUAGE SQL SECURITY DEFINER;

@@ -12,13 +12,13 @@ export default async function PublicIntakePage({ params }: PageProps) {
   const { publicSlug } = await params
   const supabase = createServiceClient()
 
-  const { data: org } = await supabase
+  const { data: org, error } = await supabase
     .from('organizations')
     .select('name, public_slug')
     .eq('public_slug', publicSlug)
-    .single()
+    .maybeSingle()
 
-  if (!org) {
+  if (error || !org) {
     notFound()
   }
 

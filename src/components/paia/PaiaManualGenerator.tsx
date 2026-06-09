@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { paiaManualSchema, type PaiaManualInput } from '@/lib/validators/paia'
 import { useRouter } from 'next/navigation'
+import { savePaiaManual } from '@/app/actions/paia'
 
 interface Organization {
   id: string
@@ -17,7 +17,6 @@ interface PaiaManualGeneratorProps {
 
 export default function PaiaManualGenerator({ org }: PaiaManualGeneratorProps) {
   const router = useRouter()
-  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [generatedMarkdown, setGeneratedMarkdown] = useState<string | null>(null)
@@ -132,41 +131,20 @@ ${formData.contactDetails ? `## 10. Contact Details\n\n${formData.contactDetails
     setError(null)
 
     try {
-      const validatedData = paiaManualSchema.parse(formData)
       const markdown = generateMarkdown()
+      const result = await savePaiaManual(formData, markdown)
 
-      const { error } = await supabase
-        .from('paia_manuals')
-        .insert({
-          org_id: org.id,
-          business_name: validatedData.businessName,
-          registration_number: validatedData.registrationNumber,
-          industry: validatedData.industry,
-          information_officer_name: validatedData.informationOfficerName,
-          information_officer_email: validatedData.informationOfficerEmail,
-          information_officer_phone: validatedData.informationOfficerPhone,
-          business_address: validatedData.businessAddress,
-          record_categories: validatedData.recordCategories,
-          data_subject_categories: validatedData.dataSubjectCategories,
-          personal_info_categories: validatedData.personalInfoCategories,
-          third_party_recipients: validatedData.thirdPartyRecipients,
-          cross_border_transfers: validatedData.crossBorderTransfers,
-          security_safeguards: validatedData.securitySafeguards,
-          request_process: validatedData.requestProcess,
-          contact_details: validatedData.contactDetails,
-          generated_markdown: markdown,
-        })
-
-      if (error) {
-        setError(error.message)
+      if (!result.success) {
+        setError(result.error || 'Failed to save manual')
         setLoading(false)
         return
       }
 
       router.push('/dashboard')
       router.refresh()
-    } catch {
-      setError('Please check your input and try again')
+    } catch (err) {
+      console.error('PAIA save error:', err)
+      setError('An unexpected error occurred while saving')
       setLoading(false)
     }
   }

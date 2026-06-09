@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/service'
 import { dsarSubmitSchema } from '@/lib/validators/dsar'
+import { logAuditEvent } from '@/lib/supabase/audit'
 
 const publicDsarSubmitSchema = dsarSubmitSchema.extend({
   publicSlug: z
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
-    const { error } = await supabase
+    const { data: dsar, error } = await supabase
       .from('dsar_requests')
       .insert({
         org_id: org.id,
@@ -45,6 +46,8 @@ export async function POST(request: NextRequest) {
         description: validatedData.description,
         status: 'pending',
       })
+      .select('id')
+      .single()
 
     if (error) {
       return NextResponse.json(
@@ -52,6 +55,18 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Log the public submission
+    await logAuditEvent({
+      orgId: org.id,
+      action: 'create',
+      entityType: 'dsar_request',
+      entityId: dsar.id,
+      details: { 
+        source: 'public_intake',
+        requesterEmail: validatedData.requesterEmail 
+      },
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {

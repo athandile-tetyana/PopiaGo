@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { dsarUpdateSchema, type DsarUpdateInput } from '@/lib/validators/dsar'
+import { logAuditEvent } from '@/lib/supabase/audit'
 
 interface DsarActionResult {
   success: boolean
@@ -48,6 +49,17 @@ export async function updateDsarStatus(
     return { success: false, error: context.error }
   }
 
+  const { data: existing, error: fetchError } = await context.supabase
+    .from('dsar_requests')
+    .select('status, requester_name')
+    .eq('id', requestId)
+    .eq('org_id', context.orgId)
+    .single()
+
+  if (fetchError || !existing) {
+    return { success: false, error: 'Request not found' }
+  }
+
   const { error } = await context.supabase
     .from('dsar_requests')
     .update({
@@ -60,6 +72,28 @@ export async function updateDsarStatus(
 
   if (error) {
     return { success: false, error: error.message }
+  }
+
+  if (existing.status !== validated.data.status) {
+    await logAuditEvent({
+      orgId: context.orgId,
+      action: 'status_change',
+      entityType: 'dsar_request',
+      entityId: requestId,
+      details: { 
+        oldStatus: existing.status, 
+        newStatus: validated.data.status,
+        requesterName: existing.requester_name
+      },
+    })
+  } else {
+    await logAuditEvent({
+      orgId: context.orgId,
+      action: 'dsar_update',
+      entityType: 'dsar_request',
+      entityId: requestId,
+      details: { requesterName: existing.requester_name },
+    })
   }
 
   revalidatePath('/dashboard/dsar')

@@ -31,7 +31,7 @@ export default async function EditRopaPage({ params }: EditRopaPageProps) {
     .from('org_members')
     .select('org_id')
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   if (!orgMember) {
     return (
@@ -51,7 +51,7 @@ export default async function EditRopaPage({ params }: EditRopaPageProps) {
     .select('*')
     .eq('id', activityId)
     .eq('org_id', orgMember.org_id)
-    .single()
+    .maybeSingle()
 
   if (activityError || !activity) {
     notFound()

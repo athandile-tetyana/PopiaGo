@@ -4,6 +4,40 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
+function normalizePublicSlug(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
+async function generateUniquePublicSlug(
+  serviceSupabase: ReturnType<typeof createServiceClient>,
+  organizationName: string
+) {
+  const baseSlug = normalizePublicSlug(organizationName)
+  let currentSlug = baseSlug
+  let suffix = 1
+
+  while (true) {
+    const { data: existing, error: existingError } = await serviceSupabase
+      .from('organizations')
+      .select('id')
+      .eq('public_slug', currentSlug)
+      .maybeSingle()
+
+    if (existingError) {
+      throw existingError
+    }
+
+    if (!existing) {
+      return currentSlug
+    }
+
+    currentSlug = `${baseSlug}-${suffix++}`
+  }
+}
+
 interface SignupResult {
   success: boolean
   error?: string
@@ -40,11 +74,8 @@ export async function signup(formData: {
       }
     }
 
-    // Step 2: Generate public_slug from organization name (simple lowercase)
-    const publicSlug = formData.organizationName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
+    // Step 2: Generate a unique public_slug from organization name
+    const publicSlug = await generateUniquePublicSlug(serviceSupabase, formData.organizationName)
 
     const { data: orgData, error: orgError } = await serviceSupabase
       .from('organizations')

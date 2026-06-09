@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { ropaFormSchema, type RopaFormInput } from '@/lib/validators/ropa'
+import { logAuditEvent } from '@/lib/supabase/audit'
 
 interface RopaActionResult {
   success: boolean
@@ -73,16 +74,26 @@ export async function createProcessingActivity(formData: RopaFormInput): Promise
     return context
   }
 
-  const { error } = await context.supabase
+  const { data, error } = await context.supabase
     .from('processing_activities')
     .insert({
       org_id: context.orgId,
       ...toDbPayload(validated.data),
     })
+    .select('id')
+    .single()
 
   if (error) {
     return { success: false, error: error.message }
   }
+
+  await logAuditEvent({
+    orgId: context.orgId,
+    action: 'ropa_create',
+    entityType: 'processing_activity',
+    entityId: data.id,
+    details: { name: validated.data.name },
+  })
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/ropa')
@@ -120,6 +131,14 @@ export async function updateProcessingActivity(activityId: string, formData: Rop
     return { success: false, error: 'Processing activity not found for your organization.' }
   }
 
+  await logAuditEvent({
+    orgId: context.orgId,
+    action: 'ropa_update',
+    entityType: 'processing_activity',
+    entityId: activityId,
+    details: { name: validated.data.name },
+  })
+
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/ropa')
   revalidatePath(`/dashboard/ropa/${activityId}/edit`)
@@ -141,7 +160,7 @@ async function removeProcessingActivity(activityId: string): Promise<RopaActionR
     .delete()
     .eq('id', activityId)
     .eq('org_id', context.orgId)
-    .select('id')
+    .select('id, name')
     .maybeSingle()
 
   if (error) {
@@ -151,6 +170,14 @@ async function removeProcessingActivity(activityId: string): Promise<RopaActionR
   if (!data) {
     return { success: false, error: 'Processing activity not found for your organization.' }
   }
+
+  await logAuditEvent({
+    orgId: context.orgId,
+    action: 'ropa_delete',
+    entityType: 'processing_activity',
+    entityId: activityId,
+    details: { name: data.name },
+  })
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/ropa')

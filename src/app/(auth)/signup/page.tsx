@@ -27,8 +27,7 @@ export default function SignupPage() {
     })
 
     if (result.requiresEmailConfirmation) {
-      setRequiresEmailConfirmation(true)
-      setLoading(false)
+      router.push(`/signup/success?email=${encodeURIComponent(email)}`)
       return
     }
 
